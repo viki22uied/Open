@@ -98,11 +98,13 @@ def get_tasks():
 
 
 @app.post("/reset")
-def reset(request: ResetRequest):
+def reset(request: Optional[ResetRequest] = None):
     """Reset the environment with the specified task.
 
     Returns the initial observation.
     """
+    if request is None:
+        request = ResetRequest()
     try:
         obs = env.reset(task_id=request.task_id)
         logger.info(f"Environment reset with task_id={request.task_id!r}")

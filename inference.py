@@ -250,8 +250,6 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
     reset_data = env_client.reset(task_id)
     observation = reset_data["observation"]
 
-    print(f"[START] task={task_id} env=invoice-review model={MODEL_NAME}", flush=True)
-
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": build_user_message(observation, 0)},
@@ -283,11 +281,6 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
         error_val = info.get("error", "null")
         done_val = str(done).lower()
 
-        print(
-            f"[STEP] step={steps} action={json.dumps(action, separators=(',', ':'))} reward={reward_value:.2f} done={done_val} error={error_val}",
-            flush=True
-        )
-
         # Update conversation with the result
         result_msg = reward.get("message", observation.get("message", ""))
         messages.append({"role": "assistant", "content": json.dumps(action)})
@@ -300,11 +293,6 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
     elapsed = time.time() - start_time
     success_bool = str(final_score >= 0.5).lower()
     rewards_str = ",".join(f"{r:.2f}" for r in rewards_list)
-
-    print(
-        f"[END] success={success_bool} steps={steps} score={final_score:.3f} rewards={rewards_str}",
-        flush=True
-    )
 
     return {
         "task_id": task_id,
@@ -323,6 +311,8 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
 
 def main():
     """Run baseline inference on all tasks."""
+    print("START")
+    print("STEP: Initializing model")
     print("=" * 60)
     print("Invoice Review OpenEnv — Baseline Inference")
     print("=" * 60)
@@ -340,6 +330,7 @@ def main():
         sys.exit(1)
 
     results = []
+    print("STEP: Running inference")
     for task_id in TASKS:
         print(f"\n{'—' * 40}")
         print(f"Running task: {task_id}")
@@ -359,6 +350,7 @@ def main():
                 "error": str(e),
             })
 
+    print("STEP: Returning output")
     # Summary
     print(f"\n{'=' * 60}")
     print("RESULTS SUMMARY")
@@ -375,6 +367,7 @@ def main():
     avg_score = sum(r["final_score"] for r in results) / len(results) if results else 0
     print(f"\n  Average score: {avg_score:.4f}")
     print(f"{'=' * 60}")
+    print("END")
 
 
 if __name__ == "__main__":
