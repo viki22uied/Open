@@ -250,6 +250,8 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
     reset_data = env_client.reset(task_id)
     observation = reset_data["observation"]
 
+    print(f"[START] task={task_id}", flush=True)
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": build_user_message(observation, 0)},
@@ -282,6 +284,7 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
         done_val = str(done).lower()
 
         # Update conversation with the result
+        print(f"[STEP] step={steps} reward={reward_value:.2f}", flush=True)
         result_msg = reward.get("message", observation.get("message", ""))
         messages.append({"role": "assistant", "content": json.dumps(action)})
         messages.append({"role": "user", "content": build_user_message(observation, steps)})
@@ -293,6 +296,8 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
     elapsed = time.time() - start_time
     success_bool = str(final_score >= 0.5).lower()
     rewards_str = ",".join(f"{r:.2f}" for r in rewards_list)
+
+    print(f"[END] task={task_id} score={final_score:.3f} steps={steps}", flush=True)
 
     return {
         "task_id": task_id,
@@ -311,15 +316,15 @@ def run_task(env_client: EnvClient, task_id: str) -> Dict[str, Any]:
 
 def main():
     """Run baseline inference on all tasks."""
-    print("START")
-    print("STEP: Initializing model")
-    print("=" * 60)
-    print("Invoice Review OpenEnv — Baseline Inference")
-    print("=" * 60)
-    print(f"API: {API_BASE_URL}")
-    print(f"Model: {MODEL_NAME}")
-    print(f"Env: {ENV_BASE_URL}")
-    print("=" * 60)
+    print("START", flush=True)
+    print("STEP: Initializing model", flush=True)
+    print("=" * 60, flush=True)
+    print("Invoice Review OpenEnv — Baseline Inference", flush=True)
+    print("=" * 60, flush=True)
+    print(f"API: {API_BASE_URL}", flush=True)
+    print(f"Model: {MODEL_NAME}", flush=True)
+    print(f"Env: {ENV_BASE_URL}", flush=True)
+    print("=" * 60, flush=True)
 
     env_client = EnvClient(ENV_BASE_URL)
 
@@ -330,11 +335,11 @@ def main():
         sys.exit(1)
 
     results = []
-    print("STEP: Running inference")
+    print("STEP: Running inference", flush=True)
     for task_id in TASKS:
-        print(f"\n{'—' * 40}")
-        print(f"Running task: {task_id}")
-        print(f"{'—' * 40}")
+        print(f"\n{'—' * 40}", flush=True)
+        print(f"Running task: {task_id}", flush=True)
+        print(f"{'—' * 40}", flush=True)
         try:
             result = run_task(env_client, task_id)
             results.append(result)
@@ -350,11 +355,11 @@ def main():
                 "error": str(e),
             })
 
-    print("STEP: Returning output")
+    print("STEP: Returning output", flush=True)
     # Summary
-    print(f"\n{'=' * 60}")
-    print("RESULTS SUMMARY")
-    print(f"{'=' * 60}")
+    print(f"\n{'=' * 60}", flush=True)
+    print("RESULTS SUMMARY", flush=True)
+    print(f"{'=' * 60}", flush=True)
     for r in results:
         print(
             f"  {r['task_id']:8s} | "
@@ -365,9 +370,9 @@ def main():
         )
 
     avg_score = sum(r["final_score"] for r in results) / len(results) if results else 0
-    print(f"\n  Average score: {avg_score:.4f}")
-    print(f"{'=' * 60}")
-    print("END")
+    print(f"\n  Average score: {avg_score:.4f}", flush=True)
+    print(f"{'=' * 60}", flush=True)
+    print("END", flush=True)
 
 
 if __name__ == "__main__":
