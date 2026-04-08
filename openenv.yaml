@@ -1,0 +1,126 @@
+# OpenEnv Environment Metadata
+# Invoice Review / Procurement Audit Environment
+
+name: invoice-review-openenv
+version: "1.0.0"
+description: >
+  A realistic invoice and procurement review environment for training and
+  evaluating AI agents. Agents must inspect invoices, verify vendor status,
+  cross-reference purchase orders, detect errors (math, overcharges, policy
+  violations, duplicates, unauthorized items), and make disposition decisions
+  (approve, reject, escalate). Simulates genuine accounts-payable workflows
+  with deterministic grading and dense reward shaping.
+
+author: OpenEnv Contributors
+license: MIT
+
+# --- Environment Interface ---
+interface:
+  type: http
+  default_port: 7860
+  endpoints:
+    reset: POST /reset
+    step: POST /step
+    state: GET /state
+    tasks: GET /tasks
+    health: GET /health
+
+# --- Models ---
+models:
+  observation: src.models.Observation
+  action: src.models.Action
+  reward: src.models.Reward
+  state: src.models.EnvState
+
+# --- Action Space ---
+action_space:
+  type: discrete
+  actions:
+    - inspect_invoice
+    - flag_error
+    - check_po_match
+    - check_vendor
+    - check_duplicate
+    - approve
+    - reject
+    - escalate
+    - submit_review
+
+# --- Tasks ---
+tasks:
+  - id: easy
+    name: Single Invoice Review
+    difficulty: easy
+    max_steps: 15
+    num_invoices: 1
+    description: >
+      Review one invoice with obvious math errors. Straightforward warm-up.
+  - id: medium
+    name: Multi-Invoice Batch Review
+    difficulty: medium
+    max_steps: 30
+    num_invoices: 3
+    description: >
+      Review 3 invoices with mixed issues: vendor problems, PO mismatches,
+      overcharges, and missing purchase orders.
+  - id: hard
+    name: Complex Procurement Audit
+    difficulty: hard
+    max_steps: 50
+    num_invoices: 5
+    description: >
+      Audit 5 invoices requiring detection of blacklisted vendors, duplicates,
+      subtle math errors, dual-approval thresholds, and unauthorized line items.
+
+# --- Reward ---
+reward:
+  type: dense
+  range: [-1.0, 1.0]
+  components:
+    - correct_error_flagging
+    - correct_disposition
+    - relevant_checks
+    - efficiency
+    - redundancy_penalties
+    - invalid_action_penalties
+
+# --- Grading ---
+grading:
+  type: deterministic
+  score_range: [0.0, 1.0]
+  components:
+    error_detection:
+      metric: f1_score
+      description: Precision and recall of flagged errors vs ground truth
+    disposition:
+      metric: accuracy
+      description: Correct approve/reject/escalate decisions
+    due_diligence:
+      metric: coverage
+      description: Completeness of verification checks
+    efficiency:
+      metric: step_ratio
+      description: Efficient use of step budget
+
+# --- Deployment ---
+deployment:
+  docker:
+    build: docker build -t invoice-review-openenv .
+    run: docker run -p 7860:7860 invoice-review-openenv
+  huggingface:
+    type: docker
+    sdk: docker
+    port: 7860
+
+# --- Inference ---
+inference:
+  script: inference.py
+  timeout_minutes: 20
+  resource_limits:
+    vcpu: 2
+    memory_gb: 8
+  environment_variables:
+    - API_BASE_URL
+    - MODEL_NAME
+    - HF_TOKEN
+    - ENV_BASE_URL
